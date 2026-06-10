@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f4f4; color: #222; }
+  .container { max-width: 900px; margin: 30px auto; padding: 0 16px; }
+  h1 { font-size: 22px; margin-bottom: 20px; }
+  h2 { font-size: 18px; margin-bottom: 14px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; margin-top: 10px; }
+  input, select {
+    width: 100%; padding: 8px 10px; border: 1px solid #ccc;
+    border-radius: 6px; font-size: 14px; margin-bottom: 4px;
+  }
+  input:focus, select:focus { outline: none; border-color: #185FA5; }
+
+  button {
+    cursor: pointer; padding: 9px 18px; border: 1px solid #ccc;
+    border-radius: 6px; font-size: 14px; background: #fff; color: #222;
+    margin-top: 8px; margin-right: 6px;
+  }
+  button:hover { background: #f0f0f0; }
+  button.primary { background: #185FA5; color: #fff; border-color: #185FA5; }
+  button.primary:hover { background: #0C447C; }
+  button.danger { background: #c0392b; color: #fff; border-color: #c0392b; }
+  button.danger:hover { background: #922b21; }
+  button.back { background: none; border: none; color: #185FA5; padding: 0; font-size: 13px; margin-bottom: 12px; }
+
+  .msg { padding: 9px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
+  .msg.error   { background: #fdecea; color: #a94442; border: 1px solid #f5c6cb; }
+  .msg.success { background: #eafaee; color: #2d6a4f; border: 1px solid #b7dfc6; }
+  .msg.info    { background: #eaf3fb; color: #185FA5; border: 1px solid #b5d4f4; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px; background: #f8f8f8; border-bottom: 2px solid #ddd; }
+  td { padding: 7px 8px; border-bottom: 1px solid #eee; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 12px; font-weight: bold;
+  }
+  .badge-A { background: #d4edda; color: #155724; }
+  .badge-B { background: #d1ecf1; color: #0c5460; }
+  .badge-C { background: #fff3cd; color: #856404; }
+  .badge-D { background: #fde8d8; color: #7d3c07; }
+  .badge-F { background: #f8d7da; color: #721c24; }
+
+  .stat-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .stat-box { background: #f4f8ff; border: 1px solid #d0e4f7; border-radius: 8px; padding: 12px 16px; min-width: 120px; text-align: center; }
+  .stat-label { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: bold; color: #185FA5; }
+
+  .marks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+
+  #upd-edit-form, #del-confirm { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ── MAIN MENU ── -->
+<div id="screen-main" class="screen active">
+  <div class="card" style="text-align:center; padding: 40px;">
+    <h1>Student Management System</h1>
+    <p style="color:#555; margin-bottom:24px;">BEE-17-A</p>
+    <button onclick="goto('screen-student-login')">Student Login</button>
+    <button onclick="goto('screen-admin-login')">Admin Login</button>
+  </div>
+</div>
+
+<!-- ── STUDENT LOGIN ── -->
+<div id="screen-student-login" class="screen">
+  <button class="back" onclick="goto('screen-main')">← Back</button>
+  <div class="card">
+    <h2>Student Login</h2>
+    <div id="sl-msg"></div>
+    <label>Roll Number</label>
+    <input type="number" id="sl-roll" placeholder="Enter your roll number">
+    <button class="primary" onclick="studentLogin()">Login</button>
+  </div>
+</div>
+
+<!-- ── STUDENT MENU ── -->
+<div id="screen-student-menu" class="screen">
+  <button class="back" onclick="goto('screen-student-login')">← Back</button>
+  <div class="card">
+    <h2>Student Menu</h2>
+    <p id="sm-name" style="color:#555; font-size:13px; margin-bottom:14px;"></p>
+    <button onclick="showProfile()">View My Profile</button>
+    <button onclick="showSecStats()">View Section Statistics</button>
+  </div>
+</div>
+
+<!-- ── PROFILE ── -->
+<div id="screen-profile" class="screen">
+  <button class="back" onclick="goto('screen-student-menu')">← Back</button>
+  <div class="card">
+    <h2>My Profile</h2>
+    <div id="profile-content"></div>
+  </div>
+  <div class="card">
+    <h2>Subject Analysis</h2>
+    <div id="subject-tabs" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;"></div>
+    <div id="subject-content"></div>
+  </div>
+</div>
+
+<!-- ── SECTION STATS ── -->
+<div id="screen-sec-stats" class="screen">
+  <button class="back" onclick="goto('screen-student-menu')">← Back</button>
+  <div class="card">
+    <h2>Section Statistics</h2>
+    <div id="sec-stats-content"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN LOGIN ── -->
+<div id="screen-admin-login" class="screen">
+  <button class="back" onclick="goto('screen-main')">← Back</button>
+  <div class="card">
+    <h2>Admin Login</h2>
+    <div id="al-msg"></div>
+    <label>Password</label>
+    <input type="password" id="al-pass" placeholder="Enter admin password">
+    <button class="primary" onclick="adminLogin()">Login</button>
+  </div>
+</div>
+
+<!-- ── ADMIN MENU ── -->
+<div id="screen-admin-menu" class="screen">
+  <button class="back" onclick="goto('screen-admin-login')">← Back</button>
+  <div class="card">
+    <h2>Admin Menu</h2>
+    <button onclick="goto('screen-view-menu')">View Records</button>
+    <button onclick="goto('screen-edit-menu')">Edit Records</button>
+  </div>
+</div>
+
+<!-- ── VIEW MENU ── -->
+<div id="screen-view-menu" class="screen">
+  <button class="back" onclick="goto('screen-admin-menu')">← Back</button>
+  <div class="card">
+    <h2>View Records</h2>
+    <button onclick="goto('screen-search-roll')">Search by Roll No.</button>
+    <button onclick="goto('screen-search-section')">Search by Section</button>
+    <button onclick="goto('screen-search-grade')">Search by Grade</button>
+  </div>
+</div>
+
+<!-- ── SEARCH BY ROLL ── -->
+<div id="screen-search-roll" class="screen">
+  <button class="back" onclick="goto('screen-view-menu')">← Back</button>
+  <div class="card">
+    <h2>Search by Roll No.</h2>
+    <div id="sr-msg"></div>
+    <label>Roll Number</label>
+    <input type="number" id="sr-roll" placeholder="Enter roll number">
+    <button class="primary" onclick="searchByRoll()">Search</button>
+  </div>
+  <div id="sr-result"></div>
+</div>
+
+<!-- ── SEARCH BY SECTION ── -->
+<div id="screen-search-section" class="screen">
+  <button class="back" onclick="goto('screen-view-menu')">← Back</button>
+  <div class="card">
+    <h2>Search by Section</h2>
+    <label>Section</label>
+    <select id="ss-sec"><option value="">Select</option><option>A</option><option>B</option></select>
+    <button class="primary" onclick="searchBySection()">Search</button>
+  </div>
+  <div id="ss-result"></div>
+</div>
+
+<!-- ── SEARCH BY GRADE ── -->
+<div id="screen-search-grade" class="screen">
+  <button class="back" onclick="goto('screen-view-menu')">← Back</button>
+  <div class="card">
+    <h2>Search by Grade</h2>
+    <label>Grade</label>
+    <select id="sg-grade"><option value="">Select</option><option>A</option><option>B</option><option>C</option><option>D</option><option>F</option></select>
+    <button class="primary" onclick="searchByGrade()">Search</button>
+  </div>
+  <div id="sg-result"></div>
+</div>
+
+<!-- ── EDIT MENU ── -->
+<div id="screen-edit-menu" class="screen">
+  <button class="back" onclick="goto('screen-admin-menu')">← Back</button>
+  <div class="card">
+    <h2>Edit Records</h2>
+    <button onclick="goto('screen-add')">Add New Record</button>
+    <button onclick="gotoUpdate()">Update Record</button>
+    <button onclick="gotoDelete()">Delete Record</button>
+  </div>
+</div>
+
+<!-- ── ADD RECORD ── -->
+<div id="screen-add" class="screen">
+  <button class="back" onclick="goto('screen-edit-menu')">← Back</button>
+  <div class="card">
+    <h2>Add New Record</h2>
+    <div id="add-msg"></div>
+    <label>Roll Number (6 digits)</label>
+    <input type="number" id="add-roll" placeholder="e.g. 230001">
+    <label>Name</label>
+    <input type="text" id="add-name" placeholder="Student name">
+    <label>Section</label>
+    <select id="add-sec"><option value="">Select</option><option>A</option><option>B</option></select>
+    <div class="marks-grid">
+      <div><label>ENA (0–100)</label><input type="number" id="add-m0" min="0" max="100"></div>
+      <div><label>CP (0–100)</label><input type="number" id="add-m1" min="0" max="100"></div>
+      <div><label>Ideology (0–100)</label><input type="number" id="add-m2" min="0" max="100"></div>
+      <div><label>Quran (0–100)</label><input type="number" id="add-m3" min="0" max="100"></div>
+      <div><label>Islamiat (0–100)</label><input type="number" id="add-m4" min="0" max="100"></div>
+    </div>
+    <button class="primary" onclick="addRecord()">Add Record</button>
+  </div>
+</div>
+
+<!-- ── UPDATE RECORD ── -->
+<div id="screen-update" class="screen">
+  <button class="back" onclick="goto('screen-edit-menu')">← Back</button>
+  <div class="card">
+    <h2>Update Record</h2>
+    <div id="upd-msg"></div>
+    <div id="upd-search-form">
+      <label>Roll Number</label>
+      <input type="number" id="upd-roll" placeholder="Enter roll number to search">
+      <button class="primary" onclick="findForUpdate()">Find</button>
+    </div>
+    <div id="upd-edit-form">
+      <div id="upd-found-info"></div>
+      <label>Name</label><input type="text" id="upd-name">
+      <label>Section</label>
+      <select id="upd-sec"><option>A</option><option>B</option></select>
+      <div class="marks-grid">
+        <div><label>ENA</label><input type="number" id="upd-m0" min="0" max="100"></div>
+        <div><label>CP</label><input type="number" id="upd-m1" min="0" max="100"></div>
+        <div><label>Ideology</label><input type="number" id="upd-m2" min="0" max="100"></div>
+        <div><label>Quran</label><input type="number" id="upd-m3" min="0" max="100"></div>
+        <div><label>Islamiat</label><input type="number" id="upd-m4" min="0" max="100"></div>
+      </div>
+      <button class="primary" onclick="saveUpdate()">Save Changes</button>
+      <button onclick="cancelUpdate()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE RECORD ── -->
+<div id="screen-delete" class="screen">
+  <button class="back" onclick="goto('screen-edit-menu')">← Back</button>
+  <div class="card">
+    <h2>Delete Record</h2>
+    <div id="del-msg"></div>
+    <div id="del-search-form">
+      <label>Roll Number</label>
+      <input type="number" id="del-roll" placeholder="Enter roll number">
+      <button class="primary" onclick="findForDelete()">Find</button>
+    </div>
+    <div id="del-confirm">
+      <div id="del-found-info"></div>
+      <div class="msg error">Warning: This action cannot be undone.</div>
+      <button class="danger" onclick="confirmDelete()">Confirm Delete</button>
+      <button onclick="cancelDelete()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .container -->
+
+<script>
+const API = '';  // empty = same server that served this page
+const SUBJECTS = ['ENA', 'CP', 'Ideology', 'Quran', 'Islamiat'];
+
+let currentStudent = null;
+let updateTargetRoll = null;
+let deleteTargetRoll = null;
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+
+function goto(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setMsg(id, text, type = 'info') {
+  const el = document.getElementById(id);
+  el.innerHTML = text ? `<div class="msg ${type}">${text}</div>` : '';
+}
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+
+async function api(method, path, body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  return res.json();
+}
+
+// ── Rendering helpers ────────────────────────────────────────────────────────
+
+function badge(g) {
+  return `<span class="badge badge-${g}">${g}</span>`;
+}
+
+function studentTable(list) {
+  if (!list.length) return '<div class="msg info">No records found.</div>';
+  return `
+    <div class="card" style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Roll</th><th>Name</th><th>Section</th>
+          ${SUBJECTS.map(s => `<th>${s}</th>`).join('')}
+          <th>Grade</th>
+        </tr></thead>
+        <tbody>
+          ${list.map(s => `<tr>
+            <td>${s.roll}</td>
+            <td>${s.name}</td>
+            <td>${s.section}</td>
+            ${s.marks.map(m => `<td>${m}</td>`).join('')}
+            <td>${badge(s.grade)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Student Login ────────────────────────────────────────────────────────────
+
+async function studentLogin() {
+  const roll = parseInt(document.getElementById('sl-roll').value);
+  if (!roll) { setMsg('sl-msg', 'Enter a roll number.', 'error'); return; }
+
+  const res = await api('POST', '/login/student', { roll });
+  if (!res.ok) { setMsg('sl-msg', res.error, 'error'); return; }
+
+  currentStudent = res.data;
+  document.getElementById('sm-name').textContent =
+    `Welcome, ${currentStudent.name} — Section ${currentStudent.section}`;
+  setMsg('sl-msg', '');
+  goto('screen-student-menu');
+}
+
+// ── Profile ──────────────────────────────────────────────────────────────────
+
+function showProfile() {
+  const s = currentStudent;
+  document.getElementById('profile-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Roll No</div><div class="stat-val" style="font-size:18px">${s.roll}</div></div>
+      <div class="stat-box"><div class="stat-label">Section</div><div class="stat-val">${s.section}</div></div>
+      <div class="stat-box"><div class="stat-label">Grade</div><div class="stat-val">${badge(s.grade)}</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Subject</th><th>Marks</th></tr></thead>
+      <tbody>${SUBJECTS.map((sub, i) =>
+        `<tr><td>${sub}</td><td>${s.marks[i]}</td></tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  renderSubjectTabs(0);
+  goto('screen-profile');
+}
+
+function renderSubjectTabs(active) {
+  document.getElementById('subject-tabs').innerHTML = SUBJECTS.map((s, i) =>
+    `<button style="${i===active?'background:#185FA5;color:#fff;border-color:#185FA5':''}"
+      onclick="renderSubjectTabs(${i})">${s}</button>`).join('');
+  renderSubjectData(active);
+}
+
+async function renderSubjectData(sub) {
+  const sec = currentStudent.section;
+  const res = await api('GET', `/stats/section/${sec}`);
+  if (!res.ok) return;
+
+  const stats = res.data;
+  const myMark = currentStudent.marks[sub];
+  const avg = stats.subjects[sub].avg;
+  const diff = myMark - avg;
+
+  document.getElementById('subject-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Your Marks</div><div class="stat-val">${myMark}</div></div>
+      <div class="stat-box"><div class="stat-label">Section Avg</div><div class="stat-val">${avg.toFixed(1)}</div></div>
+      <div class="stat-box"><div class="stat-label">Highest</div><div class="stat-val">${stats.subjects[sub].high}</div></div>
+      <div class="stat-box"><div class="stat-label">Lowest</div><div class="stat-val">${stats.subjects[sub].low}</div></div>
+    </div>
+    <div class="msg ${diff >= 0 ? 'success' : 'error'}">
+      ${diff >= 0 ? '▲' : '▼'} You are ${Math.abs(diff).toFixed(1)} marks
+      ${diff >= 0 ? 'above' : 'below'} the section average.
+    </div>`;
+}
+
+// ── Section Stats ────────────────────────────────────────────────────────────
+
+async function showSecStats() {
+  const sec = currentStudent.section;
+  const res = await api('GET', `/stats/section/${sec}`);
+  if (!res.ok) { return; }
+
+  const d = res.data;
+  const grades = ['A', 'B', 'C', 'D', 'F'];
+  document.getElementById('sec-stats-content').innerHTML = `
+    <p style="color:#555; font-size:13px; margin-bottom:12px">Section ${sec} — ${d.total} students</p>
+    <table>
+      <thead><tr><th>Grade</th><th>Count</th><th>Percentage</th></tr></thead>
+      <tbody>
+        ${grades.map(g => `<tr>
+          <td>${badge(g)}</td>
+          <td>${d.grades[g]}</td>
+          <td>${d.total ? ((d.grades[g] / d.total) * 100).toFixed(1) : 0}%</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  goto('screen-sec-stats');
+}
+
+// ── Admin Login ──────────────────────────────────────────────────────────────
+
+async function adminLogin() {
+  const pass = document.getElementById('al-pass').value;
+  const res = await api('POST', '/login/admin', { password: pass });
+  if (!res.ok) { setMsg('al-msg', res.error, 'error'); return; }
+  setMsg('al-msg', '');
+  goto('screen-admin-menu');
+}
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+async function searchByRoll() {
+  const roll = parseInt(document.getElementById('sr-roll').value);
+  if (!roll) { setMsg('sr-msg', 'Enter a roll number.', 'error'); return; }
+  const res = await api('GET', `/students/${roll}`);
+  document.getElementById('sr-result').innerHTML =
+    res.ok ? studentTable([res.data]) : `<div class="msg error">${res.error}</div>`;
+}
+
+async function searchBySection() {
+  const sec = document.getElementById('ss-sec').value;
+  if (!sec) { document.getElementById('ss-result').innerHTML = '<div class="msg error">Select a section.</div>'; return; }
+  const res = await api('GET', `/students/section/${sec}`);
+  document.getElementById('ss-result').innerHTML =
+    res.ok ? studentTable(res.data) : `<div class="msg error">${res.error}</div>`;
+}
+
+async function searchByGrade() {
+  const g = document.getElementById('sg-grade').value;
+  if (!g) { document.getElementById('sg-result').innerHTML = '<div class="msg error">Select a grade.</div>'; return; }
+  const res = await api('GET', `/students/grade/${g}`);
+  document.getElementById('sg-result').innerHTML =
+    res.ok ? studentTable(res.data) : `<div class="msg error">${res.error}</div>`;
+}
+
+// ── Add Record ───────────────────────────────────────────────────────────────
+
+async function addRecord() {
+  const roll = parseInt(document.getElementById('add-roll').value);
+  const name = document.getElementById('add-name').value.trim();
+  const section = document.getElementById('add-sec').value;
+  const marks = [0,1,2,3,4].map(i => parseFloat(document.getElementById(`add-m${i}`).value));
+
+  const res = await api('POST', '/students', { roll, name, section, marks });
+  if (!res.ok) { setMsg('add-msg', res.error, 'error'); return; }
+
+  setMsg('add-msg', `Record added successfully. Grade: ${res.data.grade}`, 'success');
+  ['add-roll','add-name','add-m0','add-m1','add-m2','add-m3','add-m4'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('add-sec').value = '';
+}
+
+// ── Update Record ─────────────────────────────────────────────────────────────
+
+function gotoUpdate() {
+  cancelUpdate();
+  goto('screen-update');
+}
+
+async function findForUpdate() {
+  const roll = parseInt(document.getElementById('upd-roll').value);
+  const res = await api('GET', `/students/${roll}`);
+  if (!res.ok) { setMsg('upd-msg', res.error, 'error'); return; }
+
+  const s = res.data;
+  updateTargetRoll = s.roll;
+  document.getElementById('upd-name').value = s.name;
+  document.getElementById('upd-sec').value = s.section;
+  [0,1,2,3,4].forEach(i => document.getElementById(`upd-m${i}`).value = s.marks[i]);
+  document.getElementById('upd-found-info').innerHTML =
+    `<div class="msg info">Editing: ${s.name} (Roll: ${s.roll})</div>`;
+  document.getElementById('upd-search-form').style.display = 'none';
+  document.getElementById('upd-edit-form').style.display = 'block';
+  setMsg('upd-msg', '');
+}
+
+async function saveUpdate() {
+  const name = document.getElementById('upd-name').value.trim();
+  const section = document.getElementById('upd-sec').value;
+  const marks = [0,1,2,3,4].map(i => parseFloat(document.getElementById(`upd-m${i}`).value));
+
+  const res = await api('PUT', `/students/${updateTargetRoll}`, { name, section, marks });
+  if (!res.ok) { setMsg('upd-msg', res.error, 'error'); return; }
+
+  setMsg('upd-msg', `Record updated. New grade: ${res.data.grade}`, 'success');
+  cancelUpdate();
+}
+
+function cancelUpdate() {
+  document.getElementById('upd-search-form').style.display = 'block';
+  document.getElementById('upd-edit-form').style.display = 'none';
+  document.getElementById('upd-roll').value = '';
+  updateTargetRoll = null;
+}
+
+// ── Delete Record ─────────────────────────────────────────────────────────────
+
+function gotoDelete() {
+  cancelDelete();
+  goto('screen-delete');
+}
+
+async function findForDelete() {
+  const roll = parseInt(document.getElementById('del-roll').value);
+  const res = await api('GET', `/students/${roll}`);
+  if (!res.ok) { setMsg('del-msg', res.error, 'error'); return; }
+
+  deleteTargetRoll = res.data.roll;
+  document.getElementById('del-found-info').innerHTML = studentTable([res.data]);
+  document.getElementById('del-search-form').style.display = 'none';
+  document.getElementById('del-confirm').style.display = 'block';
+  setMsg('del-msg', '');
+}
+
+async function confirmDelete() {
+  const res = await api('DELETE', `/students/${deleteTargetRoll}`);
+  if (!res.ok) { setMsg('del-msg', res.error, 'error'); return; }
+  setMsg('del-msg', 'Record deleted successfully.', 'success');
+  cancelDelete();
+}
+
+function cancelDelete() {
+  document.getElementById('del-search-form').style.display = 'block';
+  document.getElementById('del-confirm').style.display = 'none';
+  document.getElementById('del-roll').value = '';
+  deleteTargetRoll = null;
+}
+</script>
+</body>
+</html>
