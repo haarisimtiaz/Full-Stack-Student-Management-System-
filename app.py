@@ -6,7 +6,7 @@ app = Flask(__name__)
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
 DATA_FILE = "SampleData.txt"
-ADMIN_PASSWORD = "Nate_Diaz"
+ADMIN_PASSWORD = "Admin@123"
 MAX_STUDENTS = 100
 
 students = []  # list of dicts: {roll, name, section, marks:[5], grade}
